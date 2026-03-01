@@ -1,8 +1,21 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include "esp32-hal-rmt.h"
 
 namespace
 {
+  // OLED config
+  constexpr uint8_t kOledSda = 16;
+  constexpr uint8_t kOledScl = 17;
+  constexpr uint16_t kScreenWidth = 128;
+  constexpr uint16_t kScreenHeight = 64;
+  constexpr uint8_t kOledAddr = 0x3C;
+
+  Adafruit_SSD1306 gDisplay(kScreenWidth, kScreenHeight, &Wire, -1);
+
+  // LED strip config
   constexpr uint8_t kLedPin = 11;
   constexpr uint16_t kLedCount = 20;
   constexpr uint16_t kFrameDelayMs = 30;
@@ -106,18 +119,42 @@ void setup()
 {
   Serial.begin(115200);
   delay(500);
-  Serial.println("LED strip ready: 20x APA106 on GPIO 11");
+  Serial.println("Booting...");
 
+  // Init OLED on custom I2C pins
+  Wire.begin(kOledSda, kOledScl);
+  if (!gDisplay.begin(SSD1306_SWITCHCAPVCC, kOledAddr))
+  {
+    Serial.println("OLED init failed");
+  }
+  else
+  {
+    Serial.println("OLED ready: 128x64 on GPIO 16/17");
+    gDisplay.clearDisplay();
+    gDisplay.setTextSize(1);
+    gDisplay.setTextColor(SSD1306_WHITE);
+    gDisplay.setCursor(0, 0);
+    gDisplay.println("claude-status");
+    gDisplay.println();
+    gDisplay.println("OLED: 128x64 I2C");
+    gDisplay.println("LEDs: 20x APA106");
+    gDisplay.println("GPIO 11 (RMT)");
+    gDisplay.display();
+  }
+
+  // Init LED strip
   gRmt = rmtInit(kLedPin, RMT_TX_MODE, RMT_MEM_64);
   if (gRmt == nullptr)
   {
     Serial.println("RMT init failed");
-    return;
   }
-  rmtSetTick(gRmt, 100);
-
-  clear();
-  showPixels();
+  else
+  {
+    Serial.println("LED strip ready: 20x APA106 on GPIO 11");
+    rmtSetTick(gRmt, 100);
+    clear();
+    showPixels();
+  }
 }
 
 void loop()
