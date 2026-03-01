@@ -6,7 +6,7 @@ namespace config
   // LED strip (APA106 on RMT)
   constexpr uint8_t kLedPin = 11;
   constexpr uint16_t kLedCount = 20;
-  constexpr uint8_t kLedBrightness = 26;
+  constexpr uint8_t kLedBrightness = 13;
   constexpr uint16_t kLedFrameMs = 30;
 
   // OLED display (SSD1306 over I2C)
