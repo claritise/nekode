@@ -5,7 +5,7 @@ namespace config
 {
   // LED strip (APA106 on RMT)
   constexpr uint8_t kLedPin = 11;
-  constexpr uint16_t kLedCount = 20;
+  constexpr uint16_t kLedCount = 6;
   constexpr uint8_t kLedBrightness = 13;
   constexpr uint16_t kLedFrameMs = 30;
 

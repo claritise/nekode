@@ -6,7 +6,7 @@ ESP32-S3 animated desktop companion — a tamagotchi-style neko cat on an OLED d
 
 - **MCU**: ESP32-S3-DevKitC-1 (16MB flash, PSRAM)
 - **Display**: SSD1306 128x64 OLED over I2C (GPIO 16 SDA, 17 SCL)
-- **LEDs**: 20x APA106 RGB strip on GPIO 11 via RMT
+- **LEDs**: 6x APA106 F8 8mm RGB on GPIO 11 via RMT
 - **Mic**: INMP441 I2S microphone (GPIO 7 SCK, 15 WS, 5 SD)
 
 Pin assignments and timing constants live in `src/config.h`.

@@ -8,7 +8,7 @@ namespace
 {
   rmt_obj_t *sRmt = nullptr;
   uint8_t sPixels[config::kLedCount * 3];
-  bool sActive = false;
+  led::Mode sMode = led::OFF;
 
   void setPixel(uint16_t index, uint8_t r, uint8_t g, uint8_t b)
   {
@@ -94,19 +94,29 @@ namespace led
     show();
   }
 
-  void setActive(bool on)
+  void setMode(Mode m)
   {
-    sActive = on;
+    sMode = m;
   }
 
   void tick()
   {
-    if (!sActive)
+    if (sMode == OFF)
     {
       memset(sPixels, 0, sizeof(sPixels));
       show();
       return;
     }
+
+    if (sMode == SOLID)
+    {
+      for (uint16_t i = 0; i < config::kLedCount; i++)
+        setPixel(i, config::kLedBrightness, config::kLedBrightness, config::kLedBrightness);
+      show();
+      return;
+    }
+
+    // RAINBOW
     uint16_t hue = -(uint16_t)(millis() / 2);
     for (uint16_t i = 0; i < config::kLedCount; i++)
     {

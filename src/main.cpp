@@ -15,25 +15,25 @@ namespace
   {
     const char *name;
     oled::Anim anim;
-    bool ledActive;
+    led::Mode ledMode;
   };
 
   constexpr CmdEntry kCommands[] = {
-    { "thinking",   oled::THINKING,   true  },
-    { "reading",    oled::READING,    true  },
-    { "typing",     oled::TYPING,     true  },
-    { "running",    oled::RUNNING,    true  },
-    { "searching",  oled::SEARCHING,  true  },
-    { "done",       oled::DONE,       true  },
-    { "error",      oled::ERROR,      true  },
-    { "waiting",    oled::WAITING,    false },
-    { "boot",       oled::BOOT,       true  },
-    { "sleep",      oled::SLEEP,      false },
-    { "browsing",   oled::BROWSING,   true  },
-    { "spawning",   oled::SPAWNING,   true  },
-    { "herding",    oled::HERDING,    true  },
-    { "compacting", oled::COMPACTING, true  },
-    { "planning",   oled::PLANNING,   true  },
+    { "thinking",   oled::THINKING,   led::SOLID   },
+    { "reading",    oled::READING,    led::RAINBOW },
+    { "typing",     oled::TYPING,     led::RAINBOW },
+    { "running",    oled::RUNNING,    led::RAINBOW },
+    { "searching",  oled::SEARCHING,  led::RAINBOW },
+    { "done",       oled::DONE,       led::RAINBOW },
+    { "error",      oled::ERROR,      led::RAINBOW },
+    { "waiting",    oled::WAITING,    led::OFF     },
+    { "boot",       oled::BOOT,       led::RAINBOW },
+    { "sleep",      oled::SLEEP,      led::OFF     },
+    { "browsing",   oled::BROWSING,   led::RAINBOW },
+    { "spawning",   oled::SPAWNING,   led::RAINBOW },
+    { "herding",    oled::HERDING,    led::RAINBOW },
+    { "compacting", oled::COMPACTING, led::RAINBOW },
+    { "planning",   oled::PLANNING,   led::RAINBOW },
   };
 
   void handleCommand(const char *cmd)
@@ -43,7 +43,7 @@ namespace
       if (strcmp(cmd, entry.name) == 0)
       {
         oled::setAnim(entry.anim);
-        led::setActive(entry.ledActive);
+        led::setMode(entry.ledMode);
         Serial.print("anim="); Serial.println(cmd);
         return;
       }

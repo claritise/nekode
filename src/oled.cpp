@@ -99,7 +99,7 @@ namespace oled
     {
       sAnim = WAITING;
       sFrame = 0;
-      led::setActive(false);
+      led::setMode(led::OFF);
     }
   }
 }
