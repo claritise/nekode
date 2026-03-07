@@ -77,6 +77,8 @@ namespace oled
   void setAnim(Anim a)
   {
     if (a == sAnim) return;
+    // Don't let sleep interrupt the boot animation
+    if (a == SLEEP && sAnim == BOOT) return;
     sAnim = a;
     sFrame = 0;
   }
