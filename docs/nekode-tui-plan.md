@@ -256,7 +256,7 @@ Key lifecycle details:
 ### Project structure
 
 ```
-tui/
+ide/
   package.json
   tsconfig.json
   vitest.config.ts
@@ -373,7 +373,7 @@ Deliverables:
 - [ ] `pnpm dev` launches TUI via tsx, `pnpm build` via tsup, `pnpm test` via vitest
 - [ ] Basic `<App>` component with a `<Box>` that fills the terminal
 
-Test: `pnpm dev` in `tui/` renders a blank full-screen Ink app. `pnpm test` and `pnpm lint` pass.
+Test: `pnpm dev` in `ide/` renders a blank full-screen Ink app. `pnpm test` and `pnpm lint` pass.
 
 ### Phase 1b: Single PTY pane
 
@@ -692,4 +692,4 @@ export default defineConfig({
 
 ### Package manager
 
-pnpm (matches polymer monorepo convention). Use `pnpm-workspace.yaml` at repo root if/when `tui/` and `hardware/` need shared tooling.
+pnpm (matches polymer monorepo convention). Use `pnpm-workspace.yaml` at repo root if/when `ide/` and `hardware/` need shared tooling.

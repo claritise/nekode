@@ -6,7 +6,7 @@ Monorepo for the nekode project: an ESP32-S3 desktop companion paired with a ter
 
 ```
 hardware/         — ESP32 firmware (PlatformIO/Arduino)
-tui/              — Terminal IDE (Node/Ink) [planned]
+ide/              — Terminal IDE (Node/Ink)
 docs/             — Design documents and plans
 ```
 
@@ -65,9 +65,19 @@ Send newline-terminated commands over USB CDC serial:
 - `led:<0-3>:<state>` — set LED state for specific instance
 - `focus:<0-3>` — set focused instance
 
-## TUI (tui/) [planned]
+## IDE (ide/)
 
 Node/Ink terminal IDE that multiplexes 4 Claude Code instances. See [docs/nekode-tui-plan.md](docs/nekode-tui-plan.md).
+
+### IDE scripts
+
+```
+cd ide
+pnpm dev            # run in development (tsx, no build)
+pnpm build          # build for distribution (tsup)
+pnpm test           # run tests (vitest)
+pnpm check          # lint + typecheck
+```
 
 ## Conventions
 

@@ -1,0 +1,41 @@
+{
+  "name": "nekode-ide",
+  "version": "0.0.1",
+  "description": "Terminal IDE that multiplexes 4 Claude Code instances",
+  "type": "module",
+  "bin": {
+    "nekode": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.tsx",
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format:check": "prettier --check 'src/**/*.{ts,tsx}'",
+    "format:write": "prettier --write 'src/**/*.{ts,tsx}'",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm lint && pnpm typecheck"
+  },
+  "dependencies": {
+    "ink": "^5.2.0",
+    "react": "^18.3.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@vitest/coverage-v8": "^3.1.1",
+    "eslint": "^9.23.0",
+    "ink-testing-library": "^4.0.0",
+    "prettier": "^3.5.3",
+    "tsup": "^8.4.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.29.0",
+    "vitest": "^3.1.1"
+  }
+}
