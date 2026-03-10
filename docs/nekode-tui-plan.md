@@ -1,6 +1,6 @@
 # nekode TUI — Implementation Plan
 
-A terminal-based IDE that multiplexes 4 Claude Code instances across git worktrees, with keyboard controls emulating the hardware switches (device integration comes later).
+A terminal-based IDE for schema-driven agentically augmented development. Multiplexes 4 Claude Code instances across git worktrees. No file tree, no code editor — the user works with Claude Code to refine a structured hyperlinked knowledge graph. The only file-level visibility is a git status panel showing what each instance has modified. Keyboard controls emulate the hardware switches (device integration comes later).
 
 ## Overview
 
@@ -266,6 +266,7 @@ ide/
     app.tsx                — top-level App component, state orchestration
     components/
       terminal-pane.tsx    — single Claude Code PTY viewport (xterm-headless → stdout)
+      git-status-panel.tsx — per-worktree git status: current branch + modified files
       status-bar.tsx       — bottom bar: instance tabs + state colours
       header-bar.tsx       — top bar: project name, worktree info
     lib/
@@ -284,12 +285,21 @@ ide/
 ```
 <App>
   <HeaderBar instance={focused} worktree={path} />
-  <TerminalPane pty={instances[focused].pty} />
+  <Box flexDirection="row">
+    <TerminalPane pty={instances[focused].pty} />
+    <GitStatusPanel worktree={instances[focused].worktree} />
+  </Box>
   <StatusBar instances={instances} focused={focused} />
 </App>
 ```
 
 Only the focused instance's terminal is rendered. All 4 PTYs stay alive in background.
+
+**No file tree or code editor.** The IDE does not expose a file browser, directory tree, or source code view. The only file-level visibility is the **git status panel**, which shows:
+- Current worktree branch name
+- Modified/added/deleted files (output of `git status --short`)
+
+This is intentional: the user works with Claude Code to refine structured documents in the knowledge graph. Code changes are a side effect — the git status panel lets you see what Claude Code has touched without surfacing the files themselves.
 
 ### Instance lifecycle
 
@@ -573,18 +583,23 @@ We don't use this for v1 (we need the full interactive UI), but it could replace
 10. **Shell out for git**: `child_process.execFile('git', [...])` over simple-git/nodegit. No library overhead for 5 commands, and worktree cleanup on crash is more reliable with direct control.
 11. **Unix socket for hook IPC**: Lower latency than file polling, supports concurrent writers, one-liner hook commands with `nc -U`.
 12. **Async hooks**: All status-reporting hooks use `async: true` to avoid adding latency to Claude Code tool calls.
+13. **No file tree or code view**: The IDE deliberately hides source files. Only a git status panel shows modified files per worktree. The user interacts with the knowledge graph through Claude Code, not by reading/editing code directly. This reinforces the schema-driven development model where documents are the primary artifact.
 
 ---
 
 ## UI / Styling Direction
+
+**No code visible. No file tree.** The primary interface is the Claude Code terminal pane + a git status panel showing what's changed. The user works through the knowledge graph by refining documents with Claude Code — code is a side effect, not something you look at directly.
 
 Mirror Claude Code's own terminal aesthetic:
 - **Dark theme only** — black/near-black background
 - **Monospace typography** — the terminal handles this, but UI chrome should use Unicode box-drawing for structure
 - **Minimal colour palette** — white text, dim grey for secondary info, accent colours only for state indicators
 - **Status bar** inspired by tmux/vim: compact, bottom of screen, instance tabs with state-coloured indicators
-- **Header bar**: project name left-aligned, focused worktree path right-aligned
+- **Header bar**: project name left-aligned, focused worktree branch right-aligned
+- **Git status panel**: right sidebar, shows current branch + modified files (`git status --short`). Refreshes on PostToolUse hook events. Colour-coded: green for added, yellow for modified, red for deleted.
 - **No borders on the terminal pane** — it should feel like a native terminal, not a windowed app
+- **No file explorer, no code editor, no source view** — if you need to see code, ask Claude Code to show it
 
 ---
 
