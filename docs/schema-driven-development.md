@@ -255,9 +255,11 @@ The nekode IDE is the 4-panel Claude Code multiplexer (see [nekode-tui-plan.md](
 
 ### Evolution path
 
-- **v1**: Plain markdown in `docs/`. Claude Code reads/writes them. No special panel — the docs are just files.
-- **v2**: Knowledge graph panel — renders the doc graph as a navigable view. Nodes = documents/sections, edges = markdown links, colour = status tags. Read-only. Click a node to tell the focused Claude Code instance to open that section.
-- **v3**: Obsidian-style but for product/technical work — tagged nodes, filtered views (show me everything at `status:planned` for `phase:2`), dependency visualization, completeness dashboards.
+Aligns with the three major implementation phases in [nekode-tui-plan.md](nekode-tui-plan.md):
+
+- **Phase 1** (nekode TUI): The IDE itself — 4 Claude Code instances, status tracking, git status panel. No knowledge base UI.
+- **Phase 2** (Knowledge base): Plain markdown in `docs/`. Claude Code reads/writes them. Status tag tooling, cross-referencing conventions, completion flow. No special panel — the docs are just files, agents consume them naturally.
+- **Phase 3** (Knowledge graph): Visual graph panel — renders the doc graph as a navigable view. Nodes = documents/sections, edges = markdown links, colour = status tags. Read-only. Filtered views (show me everything at `status:planned` for `phase:2`), dependency visualization, completeness dashboards, per-instance awareness.
 
 ### How it differs from Obsidian
 
@@ -275,14 +277,91 @@ Obsidian is a writing tool — you edit in it. nekode's graph panel is a **navig
 - Confidence overlay: dim nodes at `confidence:low`, bright nodes at `confidence:high`
 - Phase filtering: collapse/expand by phase to focus on current work
 
+## nekode SDD — how it actually works
+
+### Philosophy
+
+The knowledge graph replaces Jira, Linear, Confluence, GitHub Issues — all of it. Everything lives in `docs/` as markdown. The documents are a living organism that evolves with the codebase, covering:
+
+- Technical architecture (what exists, how it works)
+- Feature proposals (what's planned, why)
+- Refinement from proposal → technical spec (getting precise enough for an agent to build)
+- Research notes (best practices, prior art, technology decisions)
+- Build plans with phases, steps, and success criteria
+
+### v1 principles
+
+1. **No bespoke schema.** Documents are CLAUDE.md-like — natural prose with whatever structure makes sense for the content. Agents generate and consume them the same way they would any markdown doc. No special parser, no required frontmatter, no enforced format. Structure emerges organically.
+
+2. **Agents write, humans steer.** Agents generate and refine documents. Humans read, redirect, and approve. The existing docs in this repo ([nekode-tui-plan.md](nekode-tui-plan.md), [schema-driven-development.md](schema-driven-development.md)) are examples of the format — written collaboratively with Claude Code, not hand-authored to a template.
+
+3. **Two-step completion.** Agents can mark a feature/phase/document as **tentatively complete** when all planned success criteria are met. The user then manually marks it as **done**. This mirrors real dev teams — the developer says "I think this is ready" and the reviewer signs off.
+
+4. **Status tags are lightweight.** HTML comments (`<!-- status:implemented -->`) are the only structural convention. Everything else — section headings, table formats, diagram styles — is freeform. Tags can be added gradually as documents mature, not upfront.
+
+5. **User chooses what to build.** The knowledge graph presents the full picture — what's implemented, what's proposed, what's in research. The user decides what to work on next. The IDE doesn't impose a workflow order.
+
+### What the docs cover (by example)
+
+The existing nekode docs already demonstrate the pattern:
+
+| Document | Role | Equivalent in traditional tooling |
+|----------|------|----------------------------------|
+| [CLAUDE.md](../CLAUDE.md) | Project constitution, conventions, quick reference | README + contributing guide + architectural constraints |
+| [nekode-tui-plan.md](nekode-tui-plan.md) | Technical spec + implementation plan + build phases with success criteria | Jira epic + tech design doc + sprint plan |
+| [schema-driven-development.md](schema-driven-development.md) | Research notes + methodology + product vision + competitive analysis | Confluence pages + market research deck + ADRs |
+
+Future docs might include:
+- `hardware-architecture.md` — firmware modules, pin assignments, serial protocol (currently in CLAUDE.md, could be extracted)
+- `product-vision.md` — user personas, use cases, positioning
+- `customer-research.md` — user interviews, feedback, feature requests
+- Per-feature docs as features get complex enough to warrant their own document
+
+### How agents interact with the docs
+
+Agents consume the docs as context, the same way they read CLAUDE.md today. No special integration needed for v1:
+
+- **Researching**: "Read schema-driven-development.md and summarize what we can learn from Tessl's approach"
+- **Refining**: "Update the serial protocol section of nekode-tui-plan.md to add the new `volume:` command"
+- **Building**: "Implement Phase 1b from nekode-tui-plan.md. The success criteria are at the end of that section."
+- **Reviewing**: "Check if the current implementation matches the spec in the PTY rendering section"
+
+The agent reads the doc, understands the intent, and acts. If the doc is unclear, the agent asks or marks it `[NEEDS CLARIFICATION]`. If the doc is wrong, the agent updates it after implementation.
+
+### Completion flow
+
+```
+status:planned → agent implements → agent marks status:tentative → user reviews → status:implemented
+```
+
+- **planned**: Described in docs but not yet built
+- **in-progress**: An agent is actively working on it
+- **tentative**: Agent believes it meets all success criteria, awaiting human review
+- **implemented**: Human has confirmed it works
+- **deprecated**: Superseded or removed
+
+### What comes later (Phase 2 → 3)
+
+Phase 2 (knowledge base) adds:
+- Status tag tooling: scan, summarize, lint
+- `[NEEDS CLARIFICATION]` markers with tracking
+- Two-step completion flow (tentative → implemented)
+- Document templates and conventions
+
+Phase 3 (knowledge graph) adds:
+- Visual graph panel in the IDE
+- Completeness dashboards derived from status tags
+- Per-instance awareness (which agent is touching what)
+- Dependency visualization
+
+Future (unscheduled):
+- Structured frontmatter (YAML) for machine-parseable metadata
+- `[@test]` links from specs to test files (from Tessl)
+- Automated tag updates via Claude Code hooks (PostToolUse → check if section was modified → update `validated` tag)
+
 ## Open questions
 
-- Should tags be enforced by a lint step or hook?
-- How granular should tagging be — per section, per table row, per sentence?
-- How to handle sections that are partially implemented?
-- Should `validated` tags be auto-updated by CI?
-- Adopt `[NEEDS CLARIFICATION]` markers from Spec Kit?
-- Adopt `[@test]` links from Tessl for connecting specs to test files?
-- Should nekode have a CODE_MAP.md per directory (from DDD) or keep everything in the hyperlinked doc graph?
 - How to handle the brownfield problem — nekode already has implemented firmware, so docs need to describe existing code accurately
-- What's the right level of acceptance criteria formality — full EARS or simpler Given/When/Then?
+- When does a section get big enough to split into its own document?
+- Should agents auto-update docs after implementation, or only when explicitly asked?
+- How to prevent doc drift when multiple agents are editing the same document concurrently (worktree isolation helps but doesn't solve cross-doc references)

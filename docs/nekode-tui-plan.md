@@ -371,7 +371,13 @@ The TUI receives these, updates its internal state map, and reflects the state i
 
 ## Implementation Phases
 
-### Phase 1a: Project scaffold
+Three major phases. Hardware integration is a separate track (see below).
+
+### Phase 1: nekode TUI
+
+The core IDE — a terminal multiplexer for 4 Claude Code instances with status tracking.
+
+#### 1a: Project scaffold
 
 Deliverables:
 - [ ] Node/Ink project with TypeScript (strict, ESM, `target: ES2022`, `moduleResolution: bundler`)
@@ -385,7 +391,7 @@ Deliverables:
 
 Test: `pnpm dev` in `ide/` renders a blank full-screen Ink app. `pnpm test` and `pnpm lint` pass.
 
-### Phase 1b: Single PTY pane
+#### 1b: Single PTY pane
 
 Deliverables:
 - [ ] `@xterm/headless` Terminal instance to parse PTY ANSI output into cell buffer
@@ -396,7 +402,7 @@ Deliverables:
 
 Test: `pnpm dev` launches one Claude Code session, fully interactive — identical to running `claude` directly.
 
-### Phase 1c: Worktree lifecycle
+#### 1c: Worktree lifecycle
 
 Deliverables:
 - [ ] Worktree manager: thin async wrapper around `child_process.execFile('git', [...])`
@@ -410,7 +416,7 @@ Deliverables:
 
 Test: `pnpm dev` creates 4 worktrees, `Ctrl+C` removes them. Verify with `git worktree list`.
 
-### Phase 1d: 4 instances + switching
+#### 1d: 4 instances + switching
 
 Deliverables:
 - [ ] Instance manager: spawn 4 Claude Code PTYs, one per worktree, each with its own xterm-headless Terminal
@@ -422,7 +428,7 @@ Deliverables:
 
 Test: switch between 4 Claude Code sessions with `Ctrl+A → 1/2/3/4`. Each session retains its state.
 
-### Phase 1e: Status bar + option keys
+#### 1e: Status bar + option keys
 
 Deliverables:
 - [ ] `<StatusBar>` at bottom showing 4 instance tabs with labels (`[1] [2] [3] [4]`)
@@ -430,9 +436,9 @@ Deliverables:
 - [ ] `<HeaderBar>` at top showing project name + current worktree path
 - [ ] `Ctrl+A` → `Q/W/E/R` sends the positional option keystroke to the focused PTY
 
-Test: full Phase 1 — run `nekode-tui`, get 4 switchable Claude Code sessions with status bar and option key forwarding.
+Test: run `nekode-tui`, get 4 switchable Claude Code sessions with status bar and option key forwarding.
 
-### Phase 2: Hook integration + status tracking
+#### 1f: Hook integration + status tracking
 
 Deliverables:
 - [ ] Hook shim generator: writes per-instance `.claude/settings.local.json` with inline jq commands
@@ -444,7 +450,105 @@ Deliverables:
 
 Test: Claude Code activity in any instance updates the status bar in real time.
 
-### Phase 3: Firmware — switches
+#### 1g: Git status panel
+
+Deliverables:
+- [ ] `<GitStatusPanel>` right sidebar component
+- [ ] Per-instance git status display: current branch + modified files (`git status --short`)
+- [ ] Colour-coded: green for added, yellow for modified, red for deleted
+- [ ] Auto-refresh on PostToolUse hook events
+- [ ] Collapsible per-instance sections
+
+Test: Claude Code edits a file → git status panel updates in real time showing the modified file.
+
+**Phase 1 complete:** nekode is a usable IDE — 4 Claude Code instances, status tracking, git status panel, keyboard-only workflow. Ship it.
+
+---
+
+### Phase 2: Knowledge base
+
+Plain markdown knowledge base — the SDD document system described in [schema-driven-development.md](schema-driven-development.md). No graph UI, no special panel. Documents live in `docs/` and agents consume them naturally.
+
+#### 2a: Document conventions + templates
+
+Deliverables:
+- [ ] Establish document conventions in CLAUDE.md: status tags (`<!-- status:implemented -->`), cross-references, document roles
+- [ ] Template prompts for common doc types: technical spec, feature proposal, research notes, architecture doc
+- [ ] Claude Code slash commands or hook-based helpers for creating new docs from templates
+- [ ] Example migration: ensure existing docs (`nekode-tui-plan.md`, `schema-driven-development.md`, `CLAUDE.md`) demonstrate the conventions
+
+Test: ask Claude Code to "create a new feature proposal for X" and it generates a well-structured doc following conventions.
+
+#### 2b: Status tag tooling
+
+Deliverables:
+- [ ] CLI command or script to scan `docs/` for status tags and produce a summary (what's planned, in-progress, tentative, implemented)
+- [ ] Two-step completion flow: agents mark `status:tentative`, user marks `status:implemented`
+- [ ] Lint rule or CI check: warn on docs with no status tags, stale `validated` dates
+- [ ] `[NEEDS CLARIFICATION]` marker convention with tracking
+
+Test: run status summary, see a breakdown of all tagged sections across all docs. Agent marks a section tentative, user confirms.
+
+#### 2c: Cross-referencing + navigation
+
+Deliverables:
+- [ ] Consistent cross-reference conventions between docs (relative markdown links)
+- [ ] Document index: auto-generated from `docs/` directory or maintained manually
+- [ ] Phase/dependency tracking: which docs/sections depend on which phases
+- [ ] Claude Code can navigate the doc graph: "what depends on Phase 1e?", "what's left in Phase 2?"
+
+Test: ask Claude Code to summarize all planned work for Phase 2 — it reads the docs and gives an accurate answer.
+
+**Phase 2 complete:** the knowledge base replaces Jira/Linear/Confluence. All project state lives in `docs/` as markdown. Agents read and write it naturally. Status tracking works.
+
+---
+
+### Phase 3: Knowledge graph extension
+
+Visual knowledge graph panel in the nekode IDE — an Obsidian-style graph view built for product/technical development. Read-only navigation and status tool. See [schema-driven-development.md § Knowledge graph panel](schema-driven-development.md#knowledge-graph-panel).
+
+#### 3a: Document parser + graph model
+
+Deliverables:
+- [ ] Parser: extract nodes (documents, sections with status tags) and edges (markdown links) from `docs/`
+- [ ] In-memory graph data structure: nodes with metadata (status, phase, confidence), edges with types
+- [ ] File watcher: re-parse on document changes
+- [ ] API for querying: filter by status, phase, confidence; find dependencies; find what each instance is touching
+
+Test: parser produces correct graph from existing docs. Filtering works.
+
+#### 3b: Graph panel UI
+
+Deliverables:
+- [ ] `<KnowledgeGraphPanel>` component in the TUI
+- [ ] Force-directed or hierarchical graph layout (within terminal constraints — could be tree/list view with connection indicators rather than true 2D graph)
+- [ ] Status tag colouring: green = implemented, blue = in-progress, grey = planned, red = deprecated
+- [ ] Confidence overlay: dim vs bright nodes
+- [ ] Phase filtering: show/hide nodes by phase
+- [ ] Per-instance indicators: which parts of the graph each Claude Code instance is currently touching
+- [ ] Toggle with `Ctrl+A` → `G`
+
+Test: open graph panel, see document nodes with correct colours. Filter to Phase 2, see only relevant nodes.
+
+#### 3c: Graph-driven navigation
+
+Deliverables:
+- [ ] Click/select a node → tell focused Claude Code instance to open that document/section
+- [ ] Search within graph: find nodes by name, status, phase
+- [ ] Dependency visualization: highlight what blocks what
+- [ ] Completeness dashboard: percentage of sections at each status per phase
+
+Test: select a node in the graph → Claude Code instance receives instruction to open the corresponding doc.
+
+**Phase 3 complete:** nekode has a visual knowledge graph that shows the shape and state of the entire project. Navigation, filtering, and per-instance awareness.
+
+---
+
+### Hardware integration (independent track)
+
+Hardware features can be built in parallel with any phase above. They require the ESP32 companion device.
+
+#### H1: Firmware — switches
 
 Deliverables:
 - [ ] switches module: GPIO init, debounce, edge detection
@@ -454,7 +558,7 @@ Deliverables:
 
 Test: press switches, see key events on serial monitor.
 
-### Phase 4: Firmware — per-instance LEDs
+#### H2: Firmware — per-instance LEDs
 
 Deliverables:
 - [ ] Refactor led_strip to support per-LED colour control
@@ -464,7 +568,7 @@ Deliverables:
 
 Test: send `led:0:running` over serial, see green pulse on LED 0.
 
-### Phase 5: Device bridge
+#### H3: Device bridge
 
 Deliverables:
 - [ ] Singleton `DeviceBridge` class with `serialport` v13
@@ -481,7 +585,7 @@ Deliverables:
 
 Test: full loop — press top-row button → TUI switches instance → LED updates → OLED shows new animation.
 
-### Phase 6: Polish
+#### H4: Polish
 
 - [ ] Graceful error handling (device disconnect/reconnect, Claude Code crash)
 - [ ] Instance restart (if Claude Code exits, offer to respawn)
@@ -575,7 +679,7 @@ We don't use this for v1 (we need the full interactive UI), but it could replace
 2. **Worktree branches**: Always branch from HEAD of main.
 3. **Max instances**: Hard-coded at 4 slots (matches hardware).
 4. **OLED**: Always shows the currently focused instance's animation full-screen.
-5. **v1 is keyboard-only**: Leader key (`Ctrl+A`) + `1-4` for instance switching, `Ctrl+A` + `Q/W/E/R` for option selection. Hardware integration in Phase 3-5.
+5. **v1 is keyboard-only**: Leader key (`Ctrl+A`) + `1-4` for instance switching, `Ctrl+A` + `Q/W/E/R` for option selection. Hardware integration is a separate track (H1-H3).
 6. **PTY over SDK**: Use raw PTY spawning for the full Claude Code interactive UI. SDK is a future option for headless/structured mode.
 7. **settings.local.json for hooks**: Use `.claude/settings.local.json` (gitignored) for per-instance hook shims so they don't pollute the repo.
 8. **Leader key over Option/Alt**: Option+key requires terminal configuration on 5 of 6 major macOS terminals, and Ink's parser doesn't handle `ESC + punctuation`. Leader key works everywhere with zero config.
