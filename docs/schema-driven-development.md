@@ -10,9 +10,19 @@ Documents are **dual-purpose** — they describe both the current state of the c
 
 ## Status tags
 
-HTML comments for tagging. Invisible in rendered markdown, parseable by agents.
+HTML comments for tagging. Invisible in rendered markdown, parseable by agents. The tag syntax is deliberately simple — key:value pairs in a comment, no YAML frontmatter, no special parser required.
 
-### Block-level
+### Syntax
+
+```
+<!-- key:value, key:value, ... -->
+```
+
+All tags are comma-separated key:value pairs inside a single HTML comment. Keys are lowercase, values are lowercase or hyphenated. No spaces around colons.
+
+### Placement
+
+**Block-level** — wraps a section. Opening tag goes before the heading, closing `<!-- /status -->` after the content:
 
 ```markdown
 <!-- status:implemented, since:v0.1 -->
@@ -20,28 +30,102 @@ HTML comments for tagging. Invisible in rendered markdown, parseable by agents.
 Hooks fire at lifecycle events...
 <!-- /status -->
 
-<!-- status:planned, phase:2, depends:phase-1e -->
+<!-- status:planned, phase:2, depends:phase-1f -->
 ### Hook shimming
 Each worktree gets a `.claude/settings.local.json`...
 <!-- /status -->
 ```
 
-### Inline
+**Inline** — tags a single line, usually in tables or lists:
 
 ```markdown
 | `led:<0-3>:<state>` | Set LED state | <!-- status:implemented -->
-| `oled:<state>` | Set OLED animation | <!-- status:planned, phase:4 -->
+| `oled:<state>` | Set OLED animation | <!-- status:planned, phase:3b -->
 ```
 
-### Tag dimensions
+**Deliverable-level** — tags individual checklist items:
 
-| Tag | Values | Purpose |
-|-----|--------|---------|
-| `status` | `implemented`, `planned`, `in-progress`, `deprecated` | What's real vs aspirational |
-| `phase` | `1a`–`6` | When it gets built |
-| `depends` | phase/section refs | Build ordering |
-| `confidence` | `high`, `low`, `speculative` | How settled the design is |
-| `validated` | date or commit hash | Last confirmed match with reality |
+```markdown
+- [x] Worktree manager <!-- status:implemented, validated:2026-03-08 -->
+- [ ] Hook shim generator <!-- status:planned, phase:1f -->
+- [x] OLED animations <!-- status:tentative -->
+```
+
+### Tag reference
+
+| Tag | Values | Required | Purpose |
+|-----|--------|----------|---------|
+| `status` | `planned`, `in-progress`, `tentative`, `implemented`, `deprecated` | Yes | Lifecycle state (see completion flow below) |
+| `phase` | `1a`–`1g`, `2a`–`2c`, `3a`–`3c`, `H1`–`H4` | For planned/in-progress | When it gets built |
+| `depends` | phase or section refs (e.g. `phase-1e`, `hook-system`) | Optional | Build ordering — what must exist first |
+| `confidence` | `high`, `low`, `speculative` | Optional | How settled the design is. Default: `high` |
+| `validated` | ISO date or short commit hash (e.g. `2026-03-08`, `588f119`) | For implemented | Last confirmed match with reality |
+| `since` | version string (e.g. `v0.1`) | Optional | When it was first implemented |
+| `owner` | instance number `1`–`4` or `user` | Optional | Who is currently working on it |
+
+### Status lifecycle
+
+```
+planned → in-progress → tentative → implemented
+                ↓                        ↓
+           deprecated              deprecated
+```
+
+| Status | Meaning | Who sets it |
+|--------|---------|-------------|
+| `planned` | Described but not yet built | User or agent during planning |
+| `in-progress` | An agent is actively working on it | Agent when starting work |
+| `tentative` | Agent believes it meets success criteria, awaiting review | Agent after implementation |
+| `implemented` | Human has confirmed it works | User only |
+| `deprecated` | Superseded or removed | User or agent |
+
+**Rule:** Only the user can move something to `implemented`. Agents can move things to `tentative` but never skip the review step.
+
+### Success criteria
+
+Every section at `status:planned` that represents buildable work should have success criteria. These are the conditions an agent checks before marking `tentative`.
+
+**Format:** A `Success:` line at the end of the section, with one or more testable statements:
+
+```markdown
+<!-- status:planned, phase:1f -->
+### Hook integration
+
+Deliverables:
+- [ ] Hook shim generator writes per-instance settings
+- [ ] Unix socket listener in TUI
+- [ ] Status bar updates with per-instance state colours
+
+Success: Claude Code activity in any instance updates the status bar colour in real time. Switching instances with Ctrl+A shows correct state for each.
+<!-- /status -->
+```
+
+**Criteria rules:**
+- Must be **observable** — something you can see/test, not an internal implementation detail
+- Must be **specific** — "works correctly" is not a success criterion
+- Can reference other sections: "Success: All criteria from [Phase 1e](#phase-1e) still pass"
+- Multiple criteria separated by periods or as a list
+- Agents should quote the specific criterion they believe is met when marking `tentative`
+
+### How agents update tags
+
+1. **Starting work:** Change `status:planned` → `status:in-progress`, add `owner:N` (instance number)
+2. **During work:** No tag changes. The agent implements the deliverables.
+3. **Finishing work:** Check each success criterion. If all pass, change `status:in-progress` → `status:tentative`, remove `owner`. Include a brief note on how criteria were verified.
+4. **User review:** User changes `status:tentative` → `status:implemented`, adds `validated:date`.
+5. **Rejection:** If user finds issues, change back to `status:in-progress` and add a `<!-- note: rejection reason -->`.
+
+Agents should NOT batch tag updates. Update the tag for each section as soon as work on that section is complete.
+
+### Checklist conventions
+
+Deliverable checklists use standard markdown checkboxes. They interact with status tags:
+
+- `- [ ]` = not done (parent section should be `planned` or `in-progress`)
+- `- [x]` = done by agent (parent section can be `tentative` if all items checked)
+- A section is eligible for `tentative` only when all `- [ ]` items are `- [x]`
+
+Agents check boxes as they complete individual deliverables, even before marking the whole section tentative.
 
 ## Why dual-purpose documents
 

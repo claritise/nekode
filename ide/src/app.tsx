@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, Text, useApp, useInput, useStdout } from 'ink';
-import { DEFAULT_COLUMNS, DEFAULT_ROWS, INSTANCE_COUNT, LEADER_KEY } from './lib/constants.js';
+import {
+  CHROME_ROWS,
+  DEFAULT_COLUMNS,
+  DEFAULT_ROWS,
+  INSTANCE_COUNT,
+  LEADER_KEY,
+} from './lib/constants.js';
 import {
   createInstance,
   destroyInstance,
   resizeInstance,
   writeToInstance,
 } from './lib/instance-manager.js';
+import { registerCleanupHandlers, setCleanupInstances } from './lib/cleanup.js';
 import TerminalPane from './components/terminal-pane.js';
 import type { Instance } from './lib/types.js';
-
-/** Height reserved for header (1 line) and status bar (1 line) */
-const CHROME_ROWS = 2;
 
 interface AppProps {
   /** Skip PTY spawning (for tests) */
@@ -29,6 +33,12 @@ export default function App({ skipPty = false }: AppProps) {
   const [instance, setInstance] = useState<Instance | null>(null);
   const instanceRef = useRef<Instance | null>(null);
 
+  // Register cleanup handlers once on mount
+  useEffect(() => {
+    if (skipPty) return;
+    registerCleanupHandlers();
+  }, [skipPty]);
+
   // Spawn Claude Code on mount, clean up on unmount
   useEffect(() => {
     if (skipPty) return;
@@ -36,10 +46,12 @@ export default function App({ skipPty = false }: AppProps) {
     const inst = createInstance(0, columns, paneRows, process.cwd());
     instanceRef.current = inst;
     setInstance(inst);
+    setCleanupInstances([inst]);
 
     return () => {
-      void destroyInstance(inst);
       instanceRef.current = null;
+      setCleanupInstances([]);
+      void destroyInstance(inst);
     };
   }, [skipPty]);
 
@@ -49,9 +61,10 @@ export default function App({ skipPty = false }: AppProps) {
     resizeInstance(instanceRef.current, columns, paneRows);
   }, [columns, paneRows]);
 
-  // Forward all input to the PTY, except Ctrl+D which exits
+  // Forward all input to the PTY
   useInput(
     (input, key) => {
+      // Ctrl+D exits the nekode IDE
       if (key.ctrl && input === 'd') {
         exit();
         return;

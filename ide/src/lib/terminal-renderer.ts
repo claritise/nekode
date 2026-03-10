@@ -2,6 +2,43 @@ import type { Terminal } from '@xterm/headless';
 import type { IBufferCell } from '@xterm/headless';
 
 /**
+ * Build the SGR escape sequence for a cell's foreground color.
+ */
+function fgColorSgr(cell: IBufferCell): string {
+  if (cell.isFgDefault()) return '';
+  if (cell.isFgRGB()) {
+    const c = cell.getFgColor();
+    return `\x1b[38;2;${(c >> 16) & 0xff};${(c >> 8) & 0xff};${c & 0xff}m`;
+  }
+  if (cell.isFgPalette()) {
+    const c = cell.getFgColor();
+    // 0-7: standard SGR 30-37, 8-15: bright SGR 90-97, 16+: 256-color
+    if (c < 8) return `\x1b[${30 + c}m`;
+    if (c < 16) return `\x1b[${90 + c - 8}m`;
+    return `\x1b[38;5;${c}m`;
+  }
+  return '';
+}
+
+/**
+ * Build the SGR escape sequence for a cell's background color.
+ */
+function bgColorSgr(cell: IBufferCell): string {
+  if (cell.isBgDefault()) return '';
+  if (cell.isBgRGB()) {
+    const c = cell.getBgColor();
+    return `\x1b[48;2;${(c >> 16) & 0xff};${(c >> 8) & 0xff};${c & 0xff}m`;
+  }
+  if (cell.isBgPalette()) {
+    const c = cell.getBgColor();
+    if (c < 8) return `\x1b[${40 + c}m`;
+    if (c < 16) return `\x1b[${100 + c - 8}m`;
+    return `\x1b[48;5;${c}m`;
+  }
+  return '';
+}
+
+/**
  * Render the visible xterm buffer to a rectangular screen region
  * using direct ANSI escape sequences via process.stdout.write().
  *
@@ -27,68 +64,80 @@ export function renderTerminalToScreen(
     const line = buffer.getLine(y);
     if (!line) continue;
 
-    // Move cursor to the start of this row in the screen region
+    // Move cursor to the start of this row and clear it
     output += `\x1b[${offsetRow + y};${offsetCol}H`;
+    output += `\x1b[${cols}X`; // Erase N characters (clears stale content)
 
     let prevFg = -1;
     let prevBg = -1;
+    let prevFgMode = -1;
+    let prevBgMode = -1;
     let prevBold = false;
+    let prevDim = false;
     let prevItalic = false;
     let prevUnderline = false;
+    let prevInverse = false;
+    let prevStrikethrough = false;
 
     for (let x = 0; x < cols; x++) {
       line.getCell(x, cell);
+
+      // Skip continuation cells of wide characters
+      if (cell.getWidth() === 0) continue;
+
       const char = cell.getChars() || ' ';
 
       // Extract attributes
       const fg = cell.getFgColor();
       const bg = cell.getBgColor();
-      const fgColorMode = cell.getFgColorMode();
-      const bgColorMode = cell.getBgColorMode();
+      const fgMode = cell.getFgColorMode();
+      const bgMode = cell.getBgColorMode();
       const bold = cell.isBold() !== 0;
+      const dim = cell.isDim() !== 0;
       const italic = cell.isItalic() !== 0;
       const underline = cell.isUnderline() !== 0;
+      const inverse = cell.isInverse() !== 0;
+      const strikethrough = cell.isStrikethrough() !== 0;
 
       // Only emit SGR sequences when attributes change
-      const fgChanged = fg !== prevFg || fgColorMode !== (prevFg === -1 ? -1 : fgColorMode);
-      const bgChanged = bg !== prevBg || bgColorMode !== (prevBg === -1 ? -1 : bgColorMode);
+      const fgChanged = fg !== prevFg || fgMode !== prevFgMode;
+      const bgChanged = bg !== prevBg || bgMode !== prevBgMode;
       const attrsChanged =
-        bold !== prevBold || italic !== prevItalic || underline !== prevUnderline;
+        bold !== prevBold ||
+        dim !== prevDim ||
+        italic !== prevItalic ||
+        underline !== prevUnderline ||
+        inverse !== prevInverse ||
+        strikethrough !== prevStrikethrough;
 
       if (fgChanged || bgChanged || attrsChanged || x === 0) {
-        output += '\x1b[0m'; // Reset
+        output += '\x1b[0m'; // Reset all attributes
         if (bold) output += '\x1b[1m';
+        if (dim) output += '\x1b[2m';
         if (italic) output += '\x1b[3m';
         if (underline) output += '\x1b[4m';
-        if (fgColorMode === 1) {
-          // Default color — no SGR needed
-        } else if (fgColorMode === 2) {
-          // 256-color
-          output += `\x1b[38;5;${fg}m`;
-        } else if (fgColorMode === 3) {
-          // Truecolor (packed RGB)
-          output += `\x1b[38;2;${(fg >> 16) & 0xff};${(fg >> 8) & 0xff};${fg & 0xff}m`;
-        }
-        if (bgColorMode === 1) {
-          // Default bg
-        } else if (bgColorMode === 2) {
-          output += `\x1b[48;5;${bg}m`;
-        } else if (bgColorMode === 3) {
-          output += `\x1b[48;2;${(bg >> 16) & 0xff};${(bg >> 8) & 0xff};${bg & 0xff}m`;
-        }
+        if (inverse) output += '\x1b[7m';
+        if (strikethrough) output += '\x1b[9m';
+        output += fgColorSgr(cell);
+        output += bgColorSgr(cell);
       }
 
       prevFg = fg;
       prevBg = bg;
+      prevFgMode = fgMode;
+      prevBgMode = bgMode;
       prevBold = bold;
+      prevDim = dim;
       prevItalic = italic;
       prevUnderline = underline;
+      prevInverse = inverse;
+      prevStrikethrough = strikethrough;
 
       output += char;
     }
   }
 
-  // Reset attributes and restore cursor position
+  // Reset attributes
   output += '\x1b[0m';
 
   // Position cursor where xterm's cursor is

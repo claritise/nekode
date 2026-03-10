@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Box } from 'ink';
 import type { Instance } from '../lib/types.js';
 import { renderTerminalToScreen } from '../lib/terminal-renderer.js';
+import { RENDER_INTERVAL_MS } from '../lib/constants.js';
 
 interface TerminalPaneProps {
   instance: Instance | null;
@@ -35,15 +36,16 @@ export default function TerminalPane({ instance, offsetRow, rows, cols }: Termin
 
     const tick = () => {
       if (dirty) {
-        dirty = false;
         renderTerminalToScreen(instance.terminal, offsetRow, 1);
+        // Clear dirty AFTER render to avoid losing writes that arrive during render
+        dirty = false;
       }
-      rafRef.current = setTimeout(tick, 16); // ~60fps
+      rafRef.current = setTimeout(tick, RENDER_INTERVAL_MS);
     };
 
     // Initial render
     renderTerminalToScreen(instance.terminal, offsetRow, 1);
-    rafRef.current = setTimeout(tick, 16);
+    rafRef.current = setTimeout(tick, RENDER_INTERVAL_MS);
 
     return () => {
       onWrite.dispose();

@@ -467,39 +467,52 @@ Test: Claude Code edits a file → git status panel updates in real time showing
 
 ### Phase 2: Knowledge base
 
-Plain markdown knowledge base — the SDD document system described in [schema-driven-development.md](schema-driven-development.md). No graph UI, no special panel. Documents live in `docs/` and agents consume them naturally.
+Plain markdown knowledge base — the SDD document system described in [schema-driven-development.md](schema-driven-development.md). No graph UI, no special panel. Documents live in `docs/` and agents consume them naturally. The tag schema, success criteria format, and completion flow are defined in [schema-driven-development.md § Status tags](schema-driven-development.md#status-tags).
 
-#### 2a: Document conventions + templates
+#### 2a: Tag the existing docs
 
 Deliverables:
-- [ ] Establish document conventions in CLAUDE.md: status tags (`<!-- status:implemented -->`), cross-references, document roles
-- [ ] Template prompts for common doc types: technical spec, feature proposal, research notes, architecture doc
-- [ ] Claude Code slash commands or hook-based helpers for creating new docs from templates
-- [ ] Example migration: ensure existing docs (`nekode-tui-plan.md`, `schema-driven-development.md`, `CLAUDE.md`) demonstrate the conventions
+- [ ] Add status tags to all sections in `nekode-tui-plan.md` — mark implemented phases, tag planned phases with `phase:` refs
+- [ ] Add status tags to `schema-driven-development.md` sections where applicable
+- [ ] Add `Success:` lines to all planned phases that don't already have them
+- [ ] Add tag conventions section to `CLAUDE.md` so agents pick them up automatically
+- [ ] Document the tag reference and lifecycle rules in `CLAUDE.md` (summary) with pointer to full spec in `schema-driven-development.md`
 
-Test: ask Claude Code to "create a new feature proposal for X" and it generates a well-structured doc following conventions.
+Success: every buildable section in `docs/` has a status tag. Every planned section has a `Success:` line. A new Claude Code instance reading CLAUDE.md knows how to use status tags without being told.
 
 #### 2b: Status tag tooling
 
 Deliverables:
-- [ ] CLI command or script to scan `docs/` for status tags and produce a summary (what's planned, in-progress, tentative, implemented)
-- [ ] Two-step completion flow: agents mark `status:tentative`, user marks `status:implemented`
-- [ ] Lint rule or CI check: warn on docs with no status tags, stale `validated` dates
-- [ ] `[NEEDS CLARIFICATION]` marker convention with tracking
+- [ ] `nekode-status` CLI script (Node/TypeScript): scan `docs/**/*.md` for `<!-- status:... -->` comments, parse key:value pairs
+- [ ] Summary output: count by status (`planned: 12, in-progress: 2, tentative: 1, implemented: 8`), grouped by phase
+- [ ] Detail output: list each tagged section with its status, phase, depends, and whether it has success criteria
+- [ ] Warnings: sections with no status tag, `validated` dates older than 30 days, `tentative` items with no recent activity
+- [ ] `[NEEDS CLARIFICATION]` marker tracking: scan for `[NEEDS CLARIFICATION]` in docs, list them with file:line
 
-Test: run status summary, see a breakdown of all tagged sections across all docs. Agent marks a section tentative, user confirms.
+Success: run `pnpm status` from repo root, see a clear breakdown of project state across all docs. Warnings flag stale or incomplete tags.
 
-#### 2c: Cross-referencing + navigation
+#### 2c: Completion flow tooling
 
 Deliverables:
-- [ ] Consistent cross-reference conventions between docs (relative markdown links)
-- [ ] Document index: auto-generated from `docs/` directory or maintained manually
-- [ ] Phase/dependency tracking: which docs/sections depend on which phases
-- [ ] Claude Code can navigate the doc graph: "what depends on Phase 1e?", "what's left in Phase 2?"
+- [ ] `nekode-review` CLI: list all `status:tentative` sections for user review
+- [ ] Interactive mode: show each tentative section with its success criteria, user confirms (→ `implemented` + `validated:date`) or rejects (→ `in-progress` + rejection note)
+- [ ] Agent-side: CLAUDE.md instructions for how agents should update tags during work (start → in-progress, finish → tentative)
+- [ ] Hook integration: PostToolUse hook that nudges agents to update status tags when they modify a tagged section
 
-Test: ask Claude Code to summarize all planned work for Phase 2 — it reads the docs and gives an accurate answer.
+Success: agent implements a phase, marks it tentative. User runs `pnpm review`, sees the section with success criteria, confirms or rejects. Tags update in the markdown files.
 
-**Phase 2 complete:** the knowledge base replaces Jira/Linear/Confluence. All project state lives in `docs/` as markdown. Agents read and write it naturally. Status tracking works.
+#### 2d: Document templates + conventions
+
+Deliverables:
+- [ ] Template prompts in CLAUDE.md for common doc types: technical spec, feature proposal, research notes, architecture decision
+- [ ] Each template includes: section structure, where to put status tags, success criteria format, cross-reference conventions
+- [ ] Naming convention for docs: `{topic}.md` in `docs/`, no nesting (flat directory)
+- [ ] Cross-reference convention: relative markdown links between docs, anchor links for sections
+- [ ] Document index in `docs/README.md`: auto-maintained list of all docs with their role and top-level status
+
+Success: ask Claude Code to "create a new feature proposal for X" — it generates a doc following conventions with status tags, success criteria, and cross-references. The doc index updates.
+
+**Phase 2 complete:** the knowledge base replaces Jira/Linear/Confluence. All project state lives in `docs/` as markdown with status tags. Agents update tags as they work. Users review tentative work via CLI. Status summary gives a bird's-eye view of the project.
 
 ---
 

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh boot"
+            "command": "/path/to/nekode/hardware/set_status.sh boot"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh sleep"
+            "command": "/path/to/nekode/hardware/set_status.sh sleep"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh typing"
+            "command": "/path/to/nekode/hardware/set_status.sh typing"
           }
         ]
       }
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh reading"
+            "command": "/path/to/nekode/hardware/set_status.sh reading"
           }
         ]
       },
@@ -46,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh typing"
+            "command": "/path/to/nekode/hardware/set_status.sh typing"
           }
         ]
       },
@@ -55,7 +55,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh running"
+            "command": "/path/to/nekode/hardware/set_status.sh running"
           }
         ]
       },
@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh searching"
+            "command": "/path/to/nekode/hardware/set_status.sh searching"
           }
         ]
       },
@@ -73,7 +73,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh browsing"
+            "command": "/path/to/nekode/hardware/set_status.sh browsing"
           }
         ]
       },
@@ -82,7 +82,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh planning"
+            "command": "/path/to/nekode/hardware/set_status.sh planning"
           }
         ]
       },
@@ -91,7 +91,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh thinking"
+            "command": "/path/to/nekode/hardware/set_status.sh thinking"
           }
         ]
       }
@@ -101,7 +101,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh typing"
+            "command": "/path/to/nekode/hardware/set_status.sh typing"
           }
         ]
       }
@@ -111,7 +111,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh error"
+            "command": "/path/to/nekode/hardware/set_status.sh error"
           }
         ]
       }
@@ -121,7 +121,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh thinking"
+            "command": "/path/to/nekode/hardware/set_status.sh thinking"
           }
         ]
       }
@@ -131,7 +131,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh done"
+            "command": "/path/to/nekode/hardware/set_status.sh done"
           }
         ]
       }
@@ -141,7 +141,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh spawning"
+            "command": "/path/to/nekode/hardware/set_status.sh spawning"
           }
         ]
       }
@@ -151,7 +151,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh herding"
+            "command": "/path/to/nekode/hardware/set_status.sh herding"
           }
         ]
       }
@@ -161,7 +161,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh compacting"
+            "command": "/path/to/nekode/hardware/set_status.sh compacting"
           }
         ]
       }
@@ -172,7 +172,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/nekode/set_status.sh sleep"
+            "command": "/path/to/nekode/hardware/set_status.sh sleep"
           }
         ]
       }
